@@ -73,22 +73,16 @@ function getPosterUrl(path, size = 'w500') {
 
 function getEmbedUrls(movie) {
     const tmdbId = movie.id;
-    const title = encodeURIComponent(movie.title);
-    const year = movie.release_date ? movie.release_date.split('-')[0] : '';
-    const imdbId = movie.imdb_id || '';
-
     return {
-        vidfast: `https://vidfast.pm/e/movie/${tmdbId}`,
-        embed1: `https://1embed.cc/embed/${tmdbId}`,
-        vidfastAlt: `https://vidfast.pm/e/${title.replace(/%20/g, '-')}-${year}`,
-        embed1Alt: `https://1embed.cc/embed/${title.replace(/%20/g, '-')}`
+        vidfast: `https://vidfast.pro/movie/${tmdbId}`,
+        embed1: `https://1embed.cc/embed/${tmdbId}`
     };
 }
 
 function getTvEmbedUrls(tvShow, season, episode) {
     const tmdbId = tvShow.id;
     return {
-        vidfast: `https://vidfast.pm/e/tv/${tmdbId}/${season}/${episode}`,
+        vidfast: `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}`,
         embed1: `https://1embed.cc/embed/tv/${tmdbId}/${season}/${episode}`
     };
 }
