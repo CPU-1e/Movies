@@ -100,10 +100,31 @@
         </div>
     </div>
 
+    <div class="modal player-modal" id="playerModal">
+        <div class="player-content">
+            <div class="player-header">
+                <h2 class="player-title" id="playerTitle"></h2>
+                <div class="player-controls">
+                    <button class="source-btn active" onclick="switchSource('vidfast')" title="VidFast Server">Server 1</button>
+                    <button class="source-btn" onclick="switchSource('embed1')" title="1Embed Server">Server 2</button>
+                    <button class="player-close" id="playerClose">&times;</button>
+                </div>
+            </div>
+            <div class="episode-controls" id="episodeControls" style="display:none">
+                <select id="seasonSelect" class="episode-select"></select>
+                <select id="episodeSelect" class="episode-select"></select>
+            </div>
+            <div class="player-wrapper">
+                <iframe id="playerFrame" src="" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+            </div>
+            <div class="player-noads">No Ads - Free Streaming</div>
+        </div>
+    </div>
+
     <footer class="footer">
         <div class="footer-content">
             <p>&copy; 2026 AbdulMovies. All rights reserved.</p>
-            <p class="footer-disclaimer">Movie data provided by TMDB. Streaming via free, legal sources.</p>
+            <p class="footer-disclaimer">Movie data from TMDB. Streaming via VidFast &amp; 1Embed. No ads.</p>
         </div>
     </footer>
 

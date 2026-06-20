@@ -7,7 +7,8 @@ const state = {
     currentPage: 1,
     totalPages: 1,
     movies: [],
-    isLoading: false
+    isLoading: false,
+    currentMovie: null
 };
 
 const elements = {
@@ -35,8 +36,15 @@ const elements = {
     modalGenres: document.getElementById('modalGenres'),
     streamingLinks: document.getElementById('streamingLinks'),
     modalTrailer: document.getElementById('modalTrailer'),
+    playerModal: document.getElementById('playerModal'),
+    playerClose: document.getElementById('playerClose'),
+    playerFrame: document.getElementById('playerFrame'),
+    playerTitle: document.getElementById('playerTitle'),
     genreTags: document.getElementById('genreTags'),
-    mobileMenuBtn: document.getElementById('mobileMenuBtn')
+    mobileMenuBtn: document.getElementById('mobileMenuBtn'),
+    seasonSelect: document.getElementById('seasonSelect'),
+    episodeSelect: document.getElementById('episodeSelect'),
+    episodeControls: document.getElementById('episodeControls')
 };
 
 async function fetchFromTMDB(endpoint, params = {}) {
@@ -45,7 +53,6 @@ async function fetchFromTMDB(endpoint, params = {}) {
     Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value);
     });
-
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error('API request failed');
@@ -64,40 +71,26 @@ function getPosterUrl(path, size = 'w500') {
     return path ? `${TMDB_IMAGE_BASE}/${size}${path}` : '';
 }
 
-function getStreamingSources(movieId, movieTitle) {
-    const encodedTitle = encodeURIComponent(movieTitle);
-    return [
-        {
-            name: 'YouTube',
-            url: `https://www.youtube.com/results?search_query=${encodedTitle}+full+movie`,
-            free: true
-        },
-        {
-            name: 'Tubi',
-            url: `https://tubitv.com/search/${encodedTitle}`,
-            free: true
-        },
-        {
-            name: 'Pluto TV',
-            url: `https://pluto.tv/us/search?query=${encodedTitle}`,
-            free: true
-        },
-        {
-            name: 'Crackle',
-            url: `https://www.crackle.com/search?query=${encodedTitle}`,
-            free: true
-        },
-        {
-            name: 'IMDb',
-            url: `https://www.imdb.com/find?q=${encodedTitle}`,
-            free: true
-        },
-        {
-            name: 'JustWatch',
-            url: `https://www.justwatch.com/us/search?q=${encodedTitle}`,
-            free: true
-        }
-    ];
+function getEmbedUrls(movie) {
+    const tmdbId = movie.id;
+    const title = encodeURIComponent(movie.title);
+    const year = movie.release_date ? movie.release_date.split('-')[0] : '';
+    const imdbId = movie.imdb_id || '';
+
+    return {
+        vidfast: `https://vidfast.pm/e/movie/${tmdbId}`,
+        embed1: `https://1embed.cc/embed/${tmdbId}`,
+        vidfastAlt: `https://vidfast.pm/e/${title.replace(/%20/g, '-')}-${year}`,
+        embed1Alt: `https://1embed.cc/embed/${title.replace(/%20/g, '-')}`
+    };
+}
+
+function getTvEmbedUrls(tvShow, season, episode) {
+    const tmdbId = tvShow.id;
+    return {
+        vidfast: `https://vidfast.pm/e/tv/${tmdbId}/${season}/${episode}`,
+        embed1: `https://1embed.cc/embed/tv/${tmdbId}/${season}/${episode}`
+    };
 }
 
 function getYouTubeTrailerUrl(movieId) {
@@ -106,23 +99,19 @@ function getYouTubeTrailerUrl(movieId) {
 
 function renderHero(movie) {
     if (!movie) return;
-
     const backdrop = getBackdropUrl(movie.backdrop_path);
     elements.hero.style.backgroundImage = `url(${backdrop})`;
-
     elements.heroTitle.textContent = movie.title;
     elements.heroOverview.textContent = movie.overview;
     elements.heroRating.innerHTML = `★ ${movie.vote_average.toFixed(1)}`;
     elements.heroYear.textContent = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
-
-    elements.heroWatchBtn.onclick = () => openModal(movie);
+    elements.heroWatchBtn.onclick = () => openPlayer(movie);
 }
 
 function createMovieCard(movie) {
     const card = document.createElement('div');
     card.className = 'movie-card';
     card.onclick = () => openModal(movie);
-
     const posterUrl = getPosterUrl(movie.poster_path);
     const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
@@ -130,12 +119,11 @@ function createMovieCard(movie) {
     card.innerHTML = `
         <div class="movie-poster">
             <img src="${posterUrl || 'https://via.placeholder.com/300x450/1a1a25/ffffff?text=No+Poster'}" 
-                 alt="${movie.title}" 
-                 loading="lazy"
+                 alt="${movie.title}" loading="lazy"
                  onerror="this.src='https://via.placeholder.com/300x450/1a1a25/ffffff?text=No+Poster'">
             <div class="movie-rating">★ ${rating}</div>
             <div class="movie-poster-overlay">
-                <button class="btn-watch-small">▶ Play</button>
+                <button class="btn-play" onclick="event.stopPropagation(); openPlayer(getMovieById(${movie.id}))">&#9654; Play</button>
             </div>
         </div>
         <div class="movie-info">
@@ -144,18 +132,17 @@ function createMovieCard(movie) {
             <span class="movie-quality">HD 1080p</span>
         </div>
     `;
-
     return card;
 }
 
-function renderMovies(movies, append = false) {
-    if (!append) {
-        elements.moviesGrid.innerHTML = '';
-    }
+function getMovieById(id) {
+    return state.movies.find(m => m.id === id);
+}
 
+function renderMovies(movies, append = false) {
+    if (!append) elements.moviesGrid.innerHTML = '';
     movies.forEach(movie => {
-        const card = createMovieCard(movie);
-        elements.moviesGrid.appendChild(card);
+        elements.moviesGrid.appendChild(createMovieCard(movie));
     });
 }
 
@@ -171,7 +158,6 @@ function updateSectionTitle(category) {
 
 async function loadMovies(category, page = 1, append = false) {
     if (state.isLoading) return;
-
     state.isLoading = true;
     elements.loading.classList.add('active');
 
@@ -182,23 +168,18 @@ async function loadMovies(category, page = 1, append = false) {
 
     if (data) {
         state.totalPages = data.total_pages;
-
         if (append) {
             state.movies = [...state.movies, ...data.results];
         } else {
             state.movies = data.results;
         }
-
         renderMovies(data.results, append);
-
         if (page === 1 && data.results.length > 0) {
             const randomIndex = Math.floor(Math.random() * Math.min(5, data.results.length));
             renderHero(data.results[randomIndex]);
         }
-
         elements.loadMore.style.display = page < data.total_pages ? 'block' : 'none';
     }
-
     state.isLoading = false;
     elements.loading.classList.remove('active');
 }
@@ -208,7 +189,6 @@ async function searchMovies(query) {
         loadMovies(state.currentCategory);
         return;
     }
-
     state.isLoading = true;
     elements.loading.classList.add('active');
     elements.sectionTitle.textContent = `Search: "${query}"`;
@@ -225,14 +205,84 @@ async function searchMovies(query) {
         renderMovies(data.results);
         elements.loadMore.style.display = 'none';
     }
-
     state.isLoading = false;
     elements.loading.classList.remove('active');
 }
 
+function openPlayer(movie, season = null, episode = null) {
+    if (!movie) return;
+    state.currentMovie = movie;
+
+    const isTv = movie.first_air_date && !movie.release_date;
+    let embedUrls;
+
+    if (isTv && season && episode) {
+        embedUrls = getTvEmbedUrls(movie, season, episode);
+    } else {
+        embedUrls = getEmbedUrls(movie);
+    }
+
+    elements.playerTitle.textContent = movie.title;
+    elements.playerFrame.src = embedUrls.vidfast;
+    elements.playerModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    if (isTv) {
+        loadTvSeasons(movie);
+        elements.episodeControls.style.display = 'block';
+    } else {
+        elements.episodeControls.style.display = 'none';
+    }
+}
+
+async function loadTvSeasons(tvShow) {
+    const data = await fetchFromTMDB(`/tv/${tvShow.id}`);
+    if (data && data.seasons) {
+        elements.seasonSelect.innerHTML = '<option value="">Select Season</option>';
+        data.seasons.filter(s => s.season_number > 0).forEach(season => {
+            const opt = document.createElement('option');
+            opt.value = season.season_number;
+            opt.textContent = `Season ${season.season_number}`;
+            elements.seasonSelect.appendChild(opt);
+        });
+
+        elements.seasonSelect.onchange = async () => {
+            const seasonNum = elements.seasonSelect.value;
+            if (!seasonNum) return;
+            const seasonData = await fetchFromTMDB(`/tv/${tvShow.id}/season/${seasonNum}`);
+            if (seasonData && seasonData.episodes) {
+                elements.episodeSelect.innerHTML = '<option value="">Select Episode</option>';
+                seasonData.episodes.forEach(ep => {
+                    const opt = document.createElement('option');
+                    opt.value = ep.episode_number;
+                    opt.textContent = `Ep ${ep.episode_number}: ${ep.name}`;
+                    elements.episodeSelect.appendChild(opt);
+                });
+            }
+        };
+
+        elements.episodeSelect.onchange = () => {
+            const s = elements.seasonSelect.value;
+            const e = elements.episodeSelect.value;
+            if (s && e) {
+                const embedUrls = getTvEmbedUrls(tvShow, s, e);
+                elements.playerFrame.src = embedUrls.vidfast;
+                elements.playerTitle.textContent = `${tvShow.title} - S${s}E${e}`;
+            }
+        };
+    }
+}
+
+function switchSource(source) {
+    const movie = state.currentMovie;
+    if (!movie) return;
+    const embedUrls = getEmbedUrls(movie);
+    elements.playerFrame.src = source === 'vidfast' ? embedUrls.vidfast : embedUrls.embed1;
+}
+
 function openModal(movie) {
+    state.currentMovie = movie;
     const posterUrl = getPosterUrl(movie.poster_path, 'w780');
-    const backdropUrl = getBackdropUrl(movie.backdrop_path);
 
     elements.modalPoster.src = posterUrl || 'https://via.placeholder.com/300x450/1a1a25/ffffff?text=No+Poster';
     elements.modalTitle.textContent = movie.title;
@@ -244,24 +294,25 @@ function openModal(movie) {
     elements.modalGenres.innerHTML = '';
     if (movie.genre_ids) {
         movie.genre_ids.forEach(genreId => {
-            const genreName = getGenreName(genreId);
             const tag = document.createElement('span');
             tag.className = 'genre-tag';
-            tag.textContent = genreName;
+            tag.textContent = getGenreName(genreId);
             elements.modalGenres.appendChild(tag);
         });
     }
 
-    const sources = getStreamingSources(movie.id, movie.title);
-    elements.streamingLinks.innerHTML = sources.map(source => `
-        <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="stream-link ${source.free ? 'free' : ''}">
-            ${source.free ? '✓' : '★'} ${source.name}
+    elements.streamingLinks.innerHTML = `
+        <button class="stream-link free" onclick="closeModal(); openPlayer(state.currentMovie)">
+            &#9654; Watch Now (VidFast)
+        </button>
+        <button class="stream-link free" onclick="closeModal(); openPlayerAlt(state.currentMovie)">
+            &#9654; Watch Now (1Embed)
+        </button>
+        <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title)}+trailer" target="_blank" rel="noopener noreferrer" class="stream-link">
+            ▶ Trailer
         </a>
-    `).join('');
-
-    elements.modalTrailer.innerHTML = `
-        <a href="${getYouTubeTrailerUrl(movie.id)}" target="_blank" rel="noopener noreferrer" class="trailer-btn">
-            ▶ Watch Trailer
+        <a href="https://www.imdb.com/title/${movie.imdb_id || ''}" target="_blank" rel="noopener noreferrer" class="stream-link" ${!movie.imdb_id ? 'style="display:none"' : ''}>
+            IMDb
         </a>
     `;
 
@@ -269,8 +320,26 @@ function openModal(movie) {
     document.body.style.overflow = 'hidden';
 }
 
+function openPlayerAlt(movie) {
+    if (!movie) return;
+    state.currentMovie = movie;
+    const embedUrls = getEmbedUrls(movie);
+
+    elements.playerTitle.textContent = movie.title;
+    elements.playerFrame.src = embedUrls.embed1;
+    elements.playerModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    elements.episodeControls.style.display = 'none';
+}
+
 function closeModal() {
     elements.movieModal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function closePlayer() {
+    elements.playerFrame.src = '';
+    elements.playerModal.classList.remove('active');
     document.body.style.overflow = '';
 }
 
@@ -293,23 +362,16 @@ function initEventListeners() {
             const category = link.dataset.category;
             state.currentCategory = category;
             state.currentPage = 1;
-
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-
             updateSectionTitle(category);
             loadMovies(category);
         });
     });
 
-    elements.searchBtn.addEventListener('click', () => {
-        searchMovies(elements.searchInput.value);
-    });
-
+    elements.searchBtn.addEventListener('click', () => searchMovies(elements.searchInput.value));
     elements.searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            searchMovies(elements.searchInput.value);
-        }
+        if (e.key === 'Enter') searchMovies(elements.searchInput.value);
     });
 
     elements.loadMoreBtn.addEventListener('click', () => {
@@ -318,24 +380,27 @@ function initEventListeners() {
     });
 
     elements.modalClose.addEventListener('click', closeModal);
-
     elements.movieModal.addEventListener('click', (e) => {
-        if (e.target === elements.movieModal) {
-            closeModal();
-        }
+        if (e.target === elements.movieModal) closeModal();
+    });
+
+    elements.playerClose.addEventListener('click', closePlayer);
+    elements.playerModal.addEventListener('click', (e) => {
+        if (e.target === elements.playerModal) closePlayer();
     });
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            closeModal();
+            if (elements.playerModal.classList.contains('active')) {
+                closePlayer();
+            } else if (elements.movieModal.classList.contains('active')) {
+                closeModal();
+            }
         }
     });
 
     elements.heroWatchBtn.addEventListener('click', () => {
-        const heroMovie = state.movies[0];
-        if (heroMovie) {
-            openModal(heroMovie);
-        }
+        if (state.movies[0]) openPlayer(state.movies[0]);
     });
 
     elements.mobileMenuBtn.addEventListener('click', () => {
