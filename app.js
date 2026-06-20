@@ -71,20 +71,23 @@ function getPosterUrl(path, size = 'w500') {
     return path ? `${TMDB_IMAGE_BASE}/${size}${path}` : '';
 }
 
-function getEmbedUrls(movie) {
-    const tmdbId = movie.id;
+function getEmbedUrls(imdbId, tmdbId) {
     return {
-        vidfast: `https://vidfast.pro/movie/${tmdbId}`,
+        vidfast: `https://vidfast.pro/movie/${imdbId}`,
         embed1: `https://1embed.cc/embed/${tmdbId}`
     };
 }
 
-function getTvEmbedUrls(tvShow, season, episode) {
-    const tmdbId = tvShow.id;
+function getTvEmbedUrls(tvShowId, season, episode) {
     return {
-        vidfast: `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}`,
-        embed1: `https://1embed.cc/embed/tv/${tmdbId}/${season}/${episode}`
+        vidfast: `https://vidfast.pro/tv/${tvShowId}/${season}/${episode}`,
+        embed1: `https://1embed.cc/embed/tv/${tvShowId}/${season}/${episode}`
     };
+}
+
+async function getImdbId(tmdbId) {
+    const data = await fetchFromTMDB(`/movie/${tmdbId}`);
+    return data ? data.imdb_id : null;
 }
 
 function getYouTubeTrailerUrl(movieId) {
@@ -203,30 +206,31 @@ async function searchMovies(query) {
     elements.loading.classList.remove('active');
 }
 
-function openPlayer(movie, season = null, episode = null) {
+async function openPlayer(movie, season = null, episode = null) {
     if (!movie) return;
     state.currentMovie = movie;
 
     const isTv = movie.first_air_date && !movie.release_date;
-    let embedUrls;
+    elements.playerTitle.textContent = movie.title;
+    elements.episodeControls.style.display = 'none';
 
     if (isTv && season && episode) {
-        embedUrls = getTvEmbedUrls(movie, season, episode);
-    } else {
-        embedUrls = getEmbedUrls(movie);
-    }
-
-    elements.playerTitle.textContent = movie.title;
-    elements.playerFrame.src = embedUrls.vidfast;
-    elements.playerModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-
-    if (isTv) {
+        const urls = getTvEmbedUrls(movie.id, season, episode);
+        elements.playerFrame.src = urls.vidfast;
         loadTvSeasons(movie);
         elements.episodeControls.style.display = 'block';
     } else {
-        elements.episodeControls.style.display = 'none';
+        const imdbId = await getImdbId(movie.id);
+        if (imdbId) {
+            const urls = getEmbedUrls(imdbId, movie.id);
+            elements.playerFrame.src = urls.vidfast;
+        } else {
+            elements.playerFrame.src = `https://1embed.cc/embed/${movie.id}`;
+        }
     }
+
+    elements.playerModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
 async function loadTvSeasons(tvShow) {
@@ -255,26 +259,33 @@ async function loadTvSeasons(tvShow) {
             }
         };
 
-        elements.episodeSelect.onchange = () => {
+        elements.episodeSelect.onchange = async () => {
             const s = elements.seasonSelect.value;
             const e = elements.episodeSelect.value;
             if (s && e) {
-                const embedUrls = getTvEmbedUrls(tvShow, s, e);
-                elements.playerFrame.src = embedUrls.vidfast;
+                const urls = getTvEmbedUrls(tvShow.id, s, e);
+                elements.playerFrame.src = urls.vidfast;
                 elements.playerTitle.textContent = `${tvShow.title} - S${s}E${e}`;
             }
         };
     }
 }
 
-function switchSource(source) {
+async function switchSource(source) {
     const movie = state.currentMovie;
     if (!movie) return;
-    const embedUrls = getEmbedUrls(movie);
-    elements.playerFrame.src = source === 'vidfast' ? embedUrls.vidfast : embedUrls.embed1;
+
+    if (source === 'vidfast') {
+        const imdbId = await getImdbId(movie.id);
+        if (imdbId) {
+            elements.playerFrame.src = `https://vidfast.pro/movie/${imdbId}`;
+        }
+    } else {
+        elements.playerFrame.src = `https://1embed.cc/embed/${movie.id}`;
+    }
 }
 
-function openModal(movie) {
+async function openModal(movie) {
     state.currentMovie = movie;
     const posterUrl = getPosterUrl(movie.poster_path, 'w780');
 
@@ -295,6 +306,9 @@ function openModal(movie) {
         });
     }
 
+    const imdbId = await getImdbId(movie.id);
+    const imdbLink = imdbId ? `https://www.imdb.com/title/${imdbId}` : '#';
+
     elements.streamingLinks.innerHTML = `
         <button class="stream-link free" onclick="closeModal(); openPlayer(state.currentMovie)">
             &#9654; Watch Now (VidFast)
@@ -305,7 +319,7 @@ function openModal(movie) {
         <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title)}+trailer" target="_blank" rel="noopener noreferrer" class="stream-link">
             ▶ Trailer
         </a>
-        <a href="https://www.imdb.com/title/${movie.imdb_id || ''}" target="_blank" rel="noopener noreferrer" class="stream-link" ${!movie.imdb_id ? 'style="display:none"' : ''}>
+        <a href="${imdbLink}" target="_blank" rel="noopener noreferrer" class="stream-link" ${!imdbId ? 'style="display:none"' : ''}>
             IMDb
         </a>
     `;
@@ -314,13 +328,12 @@ function openModal(movie) {
     document.body.style.overflow = 'hidden';
 }
 
-function openPlayerAlt(movie) {
+async function openPlayerAlt(movie) {
     if (!movie) return;
     state.currentMovie = movie;
-    const embedUrls = getEmbedUrls(movie);
 
     elements.playerTitle.textContent = movie.title;
-    elements.playerFrame.src = embedUrls.embed1;
+    elements.playerFrame.src = `https://1embed.cc/embed/${movie.id}`;
     elements.playerModal.classList.add('active');
     document.body.style.overflow = 'hidden';
     elements.episodeControls.style.display = 'none';
