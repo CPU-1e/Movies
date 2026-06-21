@@ -294,6 +294,27 @@ body {
     background: rgba(255, 255, 255, 0.15);
 }
 
+.btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 1.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    min-height: 44px;
+    transition: background 0.15s;
+}
+
+.btn-download:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
 .hero-overlay {
     position: absolute;
     top: 0;

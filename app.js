@@ -52,6 +52,8 @@ function initElements() {
     elements.episodeSelect = getEl('episodeSelect');
     elements.episodeControls = getEl('episodeControls');
     elements.mobileMenuBtn = getEl('mobileMenuBtn');
+    elements.heroDownloadBtn = getEl('heroDownloadBtn');
+    elements.detailDownloadBtn = getEl('detailDownloadBtn');
 }
 
 async function fetchFromTMDB(endpoint, params = {}) {
@@ -96,6 +98,7 @@ function renderHero(movie) {
     elements.heroYear.textContent = movie.release_date ? movie.release_date.split('-')[0] : '';
 
     elements.heroPlayBtn.onclick = function() { playMovie(movie); };
+    elements.heroDownloadBtn.onclick = function() { downloadMovie(movie); };
     elements.heroDetailsBtn.onclick = function() { openMovieDetail(movie); };
 }
 
@@ -248,10 +251,7 @@ async function searchMovies(query) {
 var providers = [
     { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidlink.pro/movie/' + tmdbId; } },
     { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
-    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://www.2embed.cc/embed/movie?imdb=' + imdbId; } },
-    { name: 'Server 4', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1'; } },
-    { name: 'Server 5', getUrl: function(imdbId, tmdbId) { return 'https://autoembed.cc/embed/movie/' + imdbId; } },
-    { name: 'Server 6', getUrl: function(imdbId, tmdbId) { return 'https://embed.su/embed/movie/' + tmdbId; } }
+    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1'; } }
 ];
 var currentProviderIndex = 0;
 
@@ -273,6 +273,14 @@ async function playMovie(movie) {
 
     elements.playerModal.classList.add('active');
     document.body.style.overflow = 'hidden';
+}
+
+async function downloadMovie(movie) {
+    if (!movie) return;
+    var imdbId = await getImdbId(movie.id);
+    if (imdbId) {
+        window.open('https://www.2embed.cc/embed/movie?imdb=' + imdbId, '_blank');
+    }
 }
 
 function tryNextProvider() {
@@ -355,6 +363,7 @@ async function openMovieDetail(movie) {
     }
 
     elements.detailPlayBtn.onclick = function() { playMovie(movie); };
+    elements.detailDownloadBtn.onclick = function() { downloadMovie(movie); };
 
     var similarData = await fetchFromTMDB('/movie/' + movie.id + '/similar', { page: 1 });
     elements.similarMoviesGrid.innerHTML = '';
