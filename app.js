@@ -122,7 +122,10 @@ function createMovieCard(movie) {
     card.setAttribute('data-movie-id', movie.id);
 
     card.addEventListener('click', function() {
+        var savedType = state.currentType;
+        if (movie._type) state.currentType = movie._type;
         openMovieDetail(movie);
+        state.currentType = savedType;
     });
 
     var posterUrl = getPosterUrl(movie.poster_path);
@@ -153,7 +156,8 @@ function createMovieCard(movie) {
     playBtn.innerHTML = '&#9654; Play';
     playBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (state.currentType === 'tv') {
+        var itemType = movie._type || state.currentType;
+        if (itemType === 'tv') {
             playTvShow(movie, 1, 1);
             loadTvSeasons(movie);
         } else {
@@ -262,17 +266,37 @@ async function searchMovies(query) {
     elements.loading.classList.add('active');
     elements.sectionTitle.textContent = 'Search: "' + query + '"';
 
-    var searchEndpoint = state.currentType === 'tv' ? '/search/tv' : '/search/movie';
-    var data = await fetchFromTMDB(searchEndpoint, {
+    var movieData = await fetchFromTMDB('/search/movie', {
         query: query,
         page: 1,
         include_adult: false
     });
 
-    if (data && data.results) {
-        state.movies = data.results;
+    var tvData = await fetchFromTMDB('/search/tv', {
+        query: query,
+        page: 1,
+        include_adult: false
+    });
+
+    var combined = [];
+    if (movieData && movieData.results) {
+        movieData.results.forEach(function(m) { m._type = 'movie'; combined.push(m); });
+    }
+    if (tvData && tvData.results) {
+        tvData.results.forEach(function(t) { t._type = 'tv'; combined.push(t); });
+    }
+
+    combined.sort(function(a, b) { return (b.vote_average || 0) - (a.vote_average || 0); });
+
+    if (combined.length > 0) {
+        state.movies = combined;
         elements.moviesGrid.innerHTML = '';
-        renderMovies(data.results, false);
+        combined.forEach(function(item) {
+            var savedType = state.currentType;
+            if (item._type) state.currentType = item._type;
+            elements.moviesGrid.appendChild(createMovieCard(item));
+            state.currentType = savedType;
+        });
         elements.loadMore.style.display = 'none';
     }
     state.isLoading = false;
