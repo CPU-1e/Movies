@@ -54,10 +54,10 @@ async function fetchFromTMDB(endpoint, params = {}) {
     });
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error('API request failed');
+        if (!response.ok) throw new Error(`API request failed: ${response.status}`);
         return await response.json();
     } catch (error) {
-        console.error('TMDB API Error:', error);
+        console.error('TMDB API Error:', error.message, url.toString());
         return null;
     }
 }
@@ -327,8 +327,15 @@ function initEventListeners() {
 }
 
 function init() {
-    initEventListeners();
-    loadMovies('popular');
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            initEventListeners();
+            loadMovies('popular');
+        });
+    } else {
+        initEventListeners();
+        loadMovies('popular');
+    }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+init();
