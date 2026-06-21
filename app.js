@@ -279,7 +279,13 @@ async function downloadMovie(movie) {
     if (!movie) return;
     var imdbId = await getImdbId(movie.id);
     if (imdbId) {
-        window.open('https://www.2embed.cc/embed/movie?imdb=' + imdbId, '_blank');
+        var a = document.createElement('a');
+        a.href = 'https://www.2embed.cc/embed/movie?imdb=' + imdbId;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 }
 
