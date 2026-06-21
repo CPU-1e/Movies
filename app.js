@@ -47,6 +47,7 @@ function initElements() {
     elements.playerClose = getEl('playerClose');
     elements.playerFrame = getEl('playerFrame');
     elements.playerTitle = getEl('playerTitle');
+    elements.playerControls = getEl('playerControls');
     elements.seasonSelect = getEl('seasonSelect');
     elements.episodeSelect = getEl('episodeSelect');
     elements.episodeControls = getEl('episodeControls');
@@ -244,6 +245,14 @@ async function searchMovies(query) {
     elements.loading.classList.remove('active');
 }
 
+var providers = [
+    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
+    { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId; } },
+    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://vidlink.pro/movie/' + tmdbId; } },
+    { name: 'Server 4', getUrl: function(imdbId, tmdbId) { return 'https://embed.su/embed/movie/' + tmdbId; } }
+];
+var currentProviderIndex = 0;
+
 async function playMovie(movie) {
     if (!movie) return;
     state.currentMovie = movie;
@@ -252,11 +261,57 @@ async function playMovie(movie) {
     elements.playerTitle.textContent = movie.title || 'Movie';
     elements.episodeControls.style.display = 'none';
 
-    if (imdbId) {
-        elements.playerFrame.src = 'https://vidfast.pro/movie/' + imdbId;
-    } else {
-        elements.playerFrame.src = 'https://vidfast.pro/movie/' + movie.id;
+    state.currentMovieImdbId = imdbId;
+    currentProviderIndex = 0;
+
+    var url = providers[0].getUrl(imdbId, movie.id);
+    elements.playerFrame.src = url;
+
+    updateServerButtons();
+
+    elements.playerModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function tryNextProvider() {
+    currentProviderIndex++;
+    if (currentProviderIndex >= providers.length) {
+        currentProviderIndex = 0;
     }
+    var movie = state.currentMovie;
+    if (!movie) return;
+    var url = providers[currentProviderIndex].getUrl(state.currentMovieImdbId, movie.id);
+    elements.playerFrame.src = url;
+    updateServerButtons();
+}
+
+function switchServer(index) {
+    var movie = state.currentMovie;
+    if (!movie) return;
+    currentProviderIndex = index;
+    var url = providers[index].getUrl(state.currentMovieImdbId, movie.id);
+    elements.playerFrame.src = url;
+    updateServerButtons();
+}
+
+function updateServerButtons() {
+    var controls = elements.playerControls;
+    controls.innerHTML = '';
+    for (var i = 0; i < providers.length; i++) {
+        (function(index) {
+            var btn = document.createElement('button');
+            btn.className = 'source-btn' + (index === currentProviderIndex ? ' active' : '');
+            btn.textContent = providers[index].name;
+            btn.addEventListener('click', function() { switchServer(index); });
+            controls.appendChild(btn);
+        })(i);
+    }
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'player-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', closePlayer);
+    controls.appendChild(closeBtn);
+}
 
     elements.playerModal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -355,6 +410,15 @@ function initEventListeners() {
     elements.loadMoreBtn.addEventListener('click', function() {
         state.currentPage++;
         loadMovies(state.currentCategory, state.currentPage, true);
+    });
+
+    elements.playerFrame.addEventListener('load', function() {
+        try {
+            var loc = elements.playerFrame.contentWindow.location.href;
+            if (loc === 'about:blank' || loc === '') {
+                tryNextProvider();
+            }
+        } catch(e) {}
     });
 
     elements.playerClose.addEventListener('click', closePlayer);
