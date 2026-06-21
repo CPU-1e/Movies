@@ -587,7 +587,7 @@ function initEventListeners() {
 }
 
 function init() {
-    console.log('Initializing AbdulMovies...');
+    console.log('Initializing Movies...');
     initElements();
     initEventListeners();
     initAdBlocker();
