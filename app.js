@@ -246,10 +246,8 @@ async function searchMovies(query) {
 }
 
 var providers = [
-    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
-    { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId; } },
     { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://vidlink.pro/movie/' + tmdbId; } },
-    { name: 'Server 4', getUrl: function(imdbId, tmdbId) { return 'https://embed.su/embed/movie/' + tmdbId; } }
+    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } }
 ];
 var currentProviderIndex = 0;
 
