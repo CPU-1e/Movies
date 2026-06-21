@@ -806,16 +806,20 @@ function getBrowserName(browser) {
 
 function detectUblock() {
     return new Promise(function(resolve) {
-        var testUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
-        var timeout = setTimeout(function() { resolve(true); }, 2000);
+        var bait = document.createElement('div');
+        bait.innerHTML = '&nbsp;';
+        bait.className = 'adsbox ad-banner advertisement';
+        bait.setAttribute('id', 'ad-container');
+        bait.style.cssText = 'position:absolute;left:-999px;width:1px;height:1px;overflow:hidden;';
+        document.body.appendChild(bait);
 
-        fetch(testUrl, { method: 'HEAD', mode: 'no-cors' }).then(function() {
-            clearTimeout(timeout);
-            resolve(false);
-        }).catch(function() {
-            clearTimeout(timeout);
-            resolve(true);
-        });
+        setTimeout(function() {
+            var blocked = !bait || bait.offsetHeight === 0 || bait.clientHeight === 0 ||
+                          getComputedStyle(bait).display === 'none' ||
+                          getComputedStyle(bait).visibility === 'hidden';
+            if (bait.parentNode) bait.parentNode.removeChild(bait);
+            resolve(blocked);
+        }, 100);
     });
 }
 
@@ -834,15 +838,15 @@ function showUblockModal(browser) {
     var browserText = document.getElementById('ublockBrowser');
     if (modal && btn) {
         btn.href = getUblockUrl(browser);
+        btn.target = '_blank';
+        btn.rel = 'noopener noreferrer';
         browserText.textContent = 'Detected: ' + getBrowserName(browser);
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
 
-        btn.onclick = function(e) {
-            e.preventDefault();
+        btn.onclick = function() {
             localStorage.setItem('ublock_prompted', 'true');
             localStorage.setItem('ublock_browser', browser);
-            window.location.href = getUblockUrl(browser);
         };
 
         if (refreshBtn) {
