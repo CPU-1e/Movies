@@ -599,7 +599,7 @@ function initAdBlocker() {
     var origWindowOpen = window.open;
     window.open = function(url) {
         if (url && typeof url === 'string') {
-            var allowed = ['2embed.cc', 'tmdb.org', 'vidfast.pro', 'vidlink.pro', '1embed.cc', 'multiembed.mov'];
+            var allowed = ['vidfast.pro', '1embed.cc', 'tmdb.org'];
             for (var i = 0; i < allowed.length; i++) {
                 if (url.indexOf(allowed[i]) !== -1) return origWindowOpen.apply(this, arguments);
             }
