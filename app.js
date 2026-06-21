@@ -50,6 +50,7 @@ function initElements() {
     elements.seasonSelect = getEl('seasonSelect');
     elements.episodeSelect = getEl('episodeSelect');
     elements.episodeControls = getEl('episodeControls');
+    elements.mobileMenuBtn = getEl('mobileMenuBtn');
 }
 
 async function fetchFromTMDB(endpoint, params = {}) {
