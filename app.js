@@ -807,7 +807,7 @@ function getBrowserName(browser) {
 function detectUblock() {
     return new Promise(function(resolve) {
         var testUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
-        var timeout = setTimeout(function() { resolve(true); }, 1500);
+        var timeout = setTimeout(function() { resolve(true); }, 2000);
 
         fetch(testUrl, { method: 'HEAD', mode: 'no-cors' }).then(function() {
             clearTimeout(timeout);
@@ -819,15 +819,37 @@ function detectUblock() {
     });
 }
 
+function hideUblockModal() {
+    var modal = document.getElementById('ublockModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
 function showUblockModal(browser) {
     var modal = document.getElementById('ublockModal');
     var btn = document.getElementById('ublockInstallBtn');
+    var refreshBtn = document.getElementById('ublockRefreshBtn');
     var browserText = document.getElementById('ublockBrowser');
     if (modal && btn) {
         btn.href = getUblockUrl(browser);
         browserText.textContent = 'Detected: ' + getBrowserName(browser);
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+
+        btn.onclick = function(e) {
+            e.preventDefault();
+            localStorage.setItem('ublock_prompted', 'true');
+            localStorage.setItem('ublock_browser', browser);
+            window.location.href = getUblockUrl(browser);
+        };
+
+        if (refreshBtn) {
+            refreshBtn.onclick = function() {
+                window.location.reload();
+            };
+        }
     }
 }
 
@@ -836,9 +858,21 @@ async function checkUblock() {
     if (browser === 'safari' || browser === 'unknown') return;
 
     var hasUblock = await detectUblock();
-    if (!hasUblock) {
-        showUblockModal(browser);
+
+    if (hasUblock) {
+        localStorage.removeItem('ublock_prompted');
+        localStorage.removeItem('ublock_browser');
+        hideUblockModal();
+        return;
     }
+
+    if (localStorage.getItem('ublock_prompted') === 'true') {
+        var savedBrowser = localStorage.getItem('ublock_browser') || browser;
+        showUblockModal(savedBrowser);
+        return;
+    }
+
+    showUblockModal(browser);
 }
 
 if (document.readyState === 'loading') {
