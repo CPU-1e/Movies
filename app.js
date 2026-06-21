@@ -280,17 +280,13 @@ async function searchMovies(query) {
 }
 
 var providers = [
-    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidlink.pro/movie/' + tmdbId; } },
-    { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
-    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1'; } },
-    { name: 'Server 4', getUrl: function(imdbId, tmdbId) { return 'https://1embed.cc/embed/movie/' + tmdbId; } }
+    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
+    { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://1embed.cc/embed/movie/' + tmdbId; } }
 ];
 
 var tvProviders = [
-    { name: 'Server 1', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidlink.pro/tv/' + tmdbId + '/' + season + '/' + episode; } },
-    { name: 'Server 2', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidfast.pro/tv/' + tmdbId + '/' + season + '/' + episode; } },
-    { name: 'Server 3', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1&season=' + season + '&episode=' + episode; } },
-    { name: 'Server 4', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://1embed.cc/embed/tv/' + tmdbId + '/' + season + '/' + episode; } }
+    { name: 'Server 1', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidfast.pro/tv/' + tmdbId + '/' + season + '/' + episode; } },
+    { name: 'Server 2', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://1embed.cc/embed/tv/' + tmdbId + '/' + season + '/' + episode; } }
 ];
 var currentProviderIndex = 0;
 
