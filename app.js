@@ -313,10 +313,6 @@ function updateServerButtons() {
     controls.appendChild(closeBtn);
 }
 
-    elements.playerModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
 function closePlayer() {
     elements.playerFrame.src = '';
     elements.playerModal.classList.remove('active');
