@@ -900,3 +900,82 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #444;
 }
+
+/* uBlock Origin Modal */
+.ublock-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.97);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.ublock-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.ublock-content {
+    text-align: center;
+    padding: 2.5rem;
+    max-width: 420px;
+    width: 90%;
+}
+
+.ublock-icon {
+    margin-bottom: 1.5rem;
+}
+
+.ublock-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.ublock-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.ublock-text strong {
+    color: var(--text-primary);
+}
+
+.ublock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+    min-height: 48px;
+    transition: opacity 0.15s;
+}
+
+.ublock-btn:hover {
+    opacity: 0.85;
+}
+
+.ublock-browser {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #555;
+}

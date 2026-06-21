@@ -591,6 +591,7 @@ function init() {
     initElements();
     initEventListeners();
     initAdBlocker();
+    checkUblock();
     loadMovies('popular');
 }
 
@@ -768,6 +769,76 @@ function initAdBlocker() {
             }
         }
     }, 3000);
+}
+
+function detectBrowser() {
+    var ua = navigator.userAgent;
+    if (ua.indexOf('Firefox') !== -1 && ua.indexOf('Seamonkey') === -1) return 'firefox';
+    if (ua.indexOf('Edg') !== -1) return 'edge';
+    if (ua.indexOf('OPR') !== -1 || ua.indexOf('Opera') !== -1) return 'opera';
+    if (ua.indexOf('Brave') !== -1) return 'brave';
+    if (ua.indexOf('Vivaldi') !== -1) return 'vivaldi';
+    if (ua.indexOf('Chrome') !== -1 && ua.indexOf('Edg') === -1) return 'chrome';
+    if (ua.indexOf('Safari') !== -1 && ua.indexOf('Chrome') === -1) return 'safari';
+    return 'unknown';
+}
+
+function getUblockUrl(browser) {
+    var urls = {
+        chrome: 'https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm',
+        firefox: 'https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/',
+        edge: 'https://microsoftedge.microsoft.com/addons/detail/ublock-origin/odifjihjnamlecblkaacjpgmldfbggdn',
+        opera: 'https://addons.opera.com/en/extensions/details/ublock-origin/',
+        brave: 'https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm',
+        vivaldi: 'https://chromewebstore.google.com/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm'
+    };
+    return urls[browser] || urls.chrome;
+}
+
+function getBrowserName(browser) {
+    var names = {
+        chrome: 'Google Chrome', firefox: 'Mozilla Firefox', edge: 'Microsoft Edge',
+        opera: 'Opera', brave: 'Brave', vivaldi: 'Vivaldi', safari: 'Safari',
+        unknown: 'your browser'
+    };
+    return names[browser] || 'your browser';
+}
+
+function detectUblock() {
+    return new Promise(function(resolve) {
+        var testUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+        var timeout = setTimeout(function() { resolve(true); }, 1500);
+
+        fetch(testUrl, { method: 'HEAD', mode: 'no-cors' }).then(function() {
+            clearTimeout(timeout);
+            resolve(false);
+        }).catch(function() {
+            clearTimeout(timeout);
+            resolve(true);
+        });
+    });
+}
+
+function showUblockModal(browser) {
+    var modal = document.getElementById('ublockModal');
+    var btn = document.getElementById('ublockInstallBtn');
+    var browserText = document.getElementById('ublockBrowser');
+    if (modal && btn) {
+        btn.href = getUblockUrl(browser);
+        browserText.textContent = 'Detected: ' + getBrowserName(browser);
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+async function checkUblock() {
+    var browser = detectBrowser();
+    if (browser === 'safari' || browser === 'unknown') return;
+
+    var hasUblock = await detectUblock();
+    if (!hasUblock) {
+        showUblockModal(browser);
+    }
 }
 
 if (document.readyState === 'loading') {
