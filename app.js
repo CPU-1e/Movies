@@ -3,12 +3,16 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
 const state = {
+    currentType: 'movie',
     currentCategory: 'popular',
     currentPage: 1,
     totalPages: 1,
     movies: [],
     isLoading: false,
-    currentMovie: null
+    currentMovie: null,
+    currentSeason: 1,
+    currentEpisode: 1,
+    tvSeasons: []
 };
 
 const elements = {};
@@ -82,22 +86,32 @@ function getPosterUrl(path, size = 'w500') {
 }
 
 async function getImdbId(tmdbId) {
+    if (state.currentType === 'tv') return null;
     const data = await fetchFromTMDB(`/movie/${tmdbId}`);
     return data ? data.imdb_id : null;
 }
 
 function renderHero(movie) {
     if (!movie) return;
-    const backdrop = getBackdropUrl(movie.backdrop_path);
+    var backdrop = getBackdropUrl(movie.backdrop_path);
     if (backdrop) {
         elements.hero.style.backgroundImage = `url(${backdrop})`;
     }
-    elements.heroTitle.textContent = movie.title || '';
+    var title = state.currentType === 'tv' ? (movie.name || '') : (movie.title || '');
+    var dateStr = state.currentType === 'tv' ? movie.first_air_date : movie.release_date;
+    elements.heroTitle.textContent = title;
     elements.heroOverview.textContent = movie.overview || '';
     elements.heroRating.innerHTML = movie.vote_average ? `&#9733; ${movie.vote_average.toFixed(1)}` : '';
-    elements.heroYear.textContent = movie.release_date ? movie.release_date.split('-')[0] : '';
+    elements.heroYear.textContent = dateStr ? dateStr.split('-')[0] : '';
 
-    elements.heroPlayBtn.onclick = function() { playMovie(movie); };
+    elements.heroPlayBtn.onclick = function() {
+        if (state.currentType === 'tv') {
+            playTvShow(movie, 1, 1);
+            loadTvSeasons(movie);
+        } else {
+            playMovie(movie);
+        }
+    };
     elements.heroDownloadBtn.onclick = function() { downloadMovie(movie); };
     elements.heroDetailsBtn.onclick = function() { openMovieDetail(movie); };
 }
@@ -111,10 +125,12 @@ function createMovieCard(movie) {
         openMovieDetail(movie);
     });
 
-    const posterUrl = getPosterUrl(movie.poster_path);
-    const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
-    const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
-    const imgSrc = posterUrl || 'https://via.placeholder.com/300x450/1a1a25/ffffff?text=No+Poster';
+    var posterUrl = getPosterUrl(movie.poster_path);
+    var title = state.currentType === 'tv' ? (movie.name || 'Untitled') : (movie.title || 'Untitled');
+    var dateStr = state.currentType === 'tv' ? movie.first_air_date : movie.release_date;
+    var year = dateStr ? dateStr.split('-')[0] : 'N/A';
+    var rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+    var imgSrc = posterUrl || 'https://via.placeholder.com/300x450/1a1a25/ffffff?text=No+Poster';
 
     const poster = document.createElement('div');
     poster.className = 'movie-poster';
@@ -137,7 +153,12 @@ function createMovieCard(movie) {
     playBtn.innerHTML = '&#9654; Play';
     playBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        playMovie(movie);
+        if (state.currentType === 'tv') {
+            playTvShow(movie, 1, 1);
+            loadTvSeasons(movie);
+        } else {
+            playMovie(movie);
+        }
     });
 
     overlay.appendChild(playBtn);
@@ -148,9 +169,9 @@ function createMovieCard(movie) {
     const info = document.createElement('div');
     info.className = 'movie-info';
 
-    const title = document.createElement('h3');
-    title.className = 'movie-title';
-    title.textContent = movie.title || 'Untitled';
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'movie-title';
+    titleEl.textContent = title;
 
     const yearP = document.createElement('p');
     yearP.className = 'movie-year';
@@ -160,7 +181,7 @@ function createMovieCard(movie) {
     quality.className = 'movie-quality';
     quality.textContent = 'HD 1080p';
 
-    info.appendChild(title);
+    info.appendChild(titleEl);
     info.appendChild(yearP);
     info.appendChild(quality);
 
@@ -181,14 +202,22 @@ function renderMovies(movies, append) {
     });
 }
 
-function updateSectionTitle(category) {
-    var titles = {
+function updateSectionTitle(category, type) {
+    type = type || 'movie';
+    var movieTitles = {
         popular: 'Popular Movies',
         top_rated: 'Top Rated Movies',
         upcoming: 'Upcoming Movies',
         now_playing: 'Now Playing'
     };
-    elements.sectionTitle.textContent = titles[category] || 'Movies';
+    var tvTitles = {
+        popular: 'Popular TV Shows',
+        top_rated: 'Top Rated TV Shows',
+        on_the_air: 'On The Air',
+        airing_today: 'Airing Today'
+    };
+    var titles = type === 'tv' ? tvTitles : movieTitles;
+    elements.sectionTitle.textContent = titles[category] || (type === 'tv' ? 'TV Shows' : 'Movies');
 }
 
 async function loadMovies(category, page, append) {
@@ -198,7 +227,8 @@ async function loadMovies(category, page, append) {
     state.isLoading = true;
     elements.loading.classList.add('active');
 
-    var data = await fetchFromTMDB('/movie/' + category, {
+    var endpoint = '/' + state.currentType + '/' + category;
+    var data = await fetchFromTMDB(endpoint, {
         page: page,
         language: 'en-US'
     });
@@ -232,7 +262,8 @@ async function searchMovies(query) {
     elements.loading.classList.add('active');
     elements.sectionTitle.textContent = 'Search: "' + query + '"';
 
-    var data = await fetchFromTMDB('/search/movie', {
+    var searchEndpoint = state.currentType === 'tv' ? '/search/tv' : '/search/movie';
+    var data = await fetchFromTMDB(searchEndpoint, {
         query: query,
         page: 1,
         include_adult: false
@@ -251,7 +282,15 @@ async function searchMovies(query) {
 var providers = [
     { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidlink.pro/movie/' + tmdbId; } },
     { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
-    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1'; } }
+    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1'; } },
+    { name: 'Server 4', getUrl: function(imdbId, tmdbId) { return 'https://1embed.cc/embed/movie/' + tmdbId; } }
+];
+
+var tvProviders = [
+    { name: 'Server 1', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidlink.pro/tv/' + tmdbId + '/' + season + '/' + episode; } },
+    { name: 'Server 2', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidfast.pro/tv/' + tmdbId + '/' + season + '/' + episode; } },
+    { name: 'Server 3', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1&season=' + season + '&episode=' + episode; } },
+    { name: 'Server 4', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://1embed.cc/embed/tv/' + tmdbId + '/' + season + '/' + episode; } }
 ];
 var currentProviderIndex = 0;
 
@@ -275,28 +314,92 @@ async function playMovie(movie) {
     document.body.style.overflow = 'hidden';
 }
 
+async function playTvShow(show, season, episode) {
+    if (!show) return;
+    state.currentMovie = show;
+    state.currentSeason = season || 1;
+    state.currentEpisode = episode || 1;
+
+    var imdbId = await getImdbId(show.id);
+    elements.playerTitle.textContent = show.name || 'TV Show';
+
+    state.currentMovieImdbId = imdbId;
+    state.currentType = 'tv';
+    currentProviderIndex = 0;
+
+    var url = tvProviders[0].getUrl(imdbId, show.id, state.currentSeason, state.currentEpisode);
+    elements.playerFrame.src = url;
+
+    updateServerButtons();
+    elements.episodeControls.style.display = 'flex';
+
+    elements.playerModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+async function loadTvSeasons(show) {
+    var data = await fetchFromTMDB('/tv/' + show.id);
+    if (data && data.seasons) {
+        state.tvSeasons = data.seasons.filter(function(s) { return s.season_number > 0; });
+        elements.seasonSelect.innerHTML = '';
+        state.tvSeasons.forEach(function(s) {
+            var opt = document.createElement('option');
+            opt.value = s.season_number;
+            opt.textContent = 'Season ' + s.season_number;
+            elements.seasonSelect.appendChild(opt);
+        });
+        elements.seasonSelect.value = state.currentSeason;
+        await loadTvEpisodes(show.id, state.currentSeason);
+    }
+}
+
+async function loadTvEpisodes(showId, season) {
+    var data = await fetchFromTMDB('/tv/' + showId + '/season/' + season);
+    elements.episodeSelect.innerHTML = '';
+    if (data && data.episodes) {
+        data.episodes.forEach(function(ep) {
+            var opt = document.createElement('option');
+            opt.value = ep.episode_number;
+            opt.textContent = 'E' + ep.episode_number + ' - ' + (ep.name || 'Episode ' + ep.episode_number);
+            elements.episodeSelect.appendChild(opt);
+        });
+        elements.episodeSelect.value = state.currentEpisode;
+    }
+}
+
 async function downloadMovie(movie) {
     if (!movie) return;
-    var imdbId = await getImdbId(movie.id);
-    if (imdbId) {
+    if (state.currentType === 'tv') {
         var a = document.createElement('a');
-        a.href = 'https://www.2embed.cc/embed/movie?imdb=' + imdbId;
+        a.href = 'https://www.2embed.cc/embed/tv?tmdb=' + movie.id + '&season=' + state.currentSeason + '&episode=' + state.currentEpisode;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+    } else {
+        var imdbId = await getImdbId(movie.id);
+        if (imdbId) {
+            var a = document.createElement('a');
+            a.href = 'https://www.2embed.cc/embed/movie?imdb=' + imdbId;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
     }
 }
 
 function tryNextProvider() {
     currentProviderIndex++;
-    if (currentProviderIndex >= providers.length) {
+    var activeProviders = state.currentType === 'tv' ? tvProviders : providers;
+    if (currentProviderIndex >= activeProviders.length) {
         currentProviderIndex = 0;
     }
     var movie = state.currentMovie;
     if (!movie) return;
-    var url = providers[currentProviderIndex].getUrl(state.currentMovieImdbId, movie.id);
+    var url = activeProviders[currentProviderIndex].getUrl(state.currentMovieImdbId, movie.id, state.currentSeason, state.currentEpisode);
     elements.playerFrame.src = url;
     updateServerButtons();
 }
@@ -305,7 +408,8 @@ function switchServer(index) {
     var movie = state.currentMovie;
     if (!movie) return;
     currentProviderIndex = index;
-    var url = providers[index].getUrl(state.currentMovieImdbId, movie.id);
+    var activeProviders = state.currentType === 'tv' ? tvProviders : providers;
+    var url = activeProviders[index].getUrl(state.currentMovieImdbId, movie.id, state.currentSeason, state.currentEpisode);
     elements.playerFrame.src = url;
     updateServerButtons();
 }
@@ -313,11 +417,12 @@ function switchServer(index) {
 function updateServerButtons() {
     var controls = elements.playerControls;
     controls.innerHTML = '';
-    for (var i = 0; i < providers.length; i++) {
+    var activeProviders = state.currentType === 'tv' ? tvProviders : providers;
+    for (var i = 0; i < activeProviders.length; i++) {
         (function(index) {
             var btn = document.createElement('button');
             btn.className = 'source-btn' + (index === currentProviderIndex ? ' active' : '');
-            btn.textContent = providers[index].name;
+            btn.textContent = activeProviders[index].name;
             btn.addEventListener('click', function() { switchServer(index); });
             controls.appendChild(btn);
         })(i);
@@ -333,6 +438,7 @@ function closePlayer() {
     elements.playerFrame.src = '';
     elements.playerModal.classList.remove('active');
     document.body.style.overflow = '';
+    state.currentType = 'movie';
 }
 
 function goHome() {
@@ -352,9 +458,10 @@ async function openMovieDetail(movie) {
     if (backdrop) {
         elements.detailHero.style.backgroundImage = 'url(' + backdrop + ')';
     }
-    elements.detailTitle.textContent = movie.title || '';
+    elements.detailTitle.textContent = state.currentType === 'tv' ? (movie.name || '') : (movie.title || '');
     elements.detailRating.innerHTML = movie.vote_average ? '&#9733; ' + movie.vote_average.toFixed(1) : '';
-    elements.detailYear.textContent = movie.release_date ? movie.release_date.split('-')[0] : '';
+    var dateStr = state.currentType === 'tv' ? movie.first_air_date : movie.release_date;
+    elements.detailYear.textContent = dateStr ? dateStr.split('-')[0] : '';
     elements.detailRuntime.textContent = movie.runtime ? movie.runtime + ' min' : '';
     elements.detailOverview.textContent = movie.overview || 'No description available.';
 
@@ -368,10 +475,18 @@ async function openMovieDetail(movie) {
         });
     }
 
-    elements.detailPlayBtn.onclick = function() { playMovie(movie); };
+    elements.detailPlayBtn.onclick = function() {
+        if (state.currentType === 'tv') {
+            playTvShow(movie, 1, 1);
+            loadTvSeasons(movie);
+        } else {
+            playMovie(movie);
+        }
+    };
     elements.detailDownloadBtn.onclick = function() { downloadMovie(movie); };
 
-    var similarData = await fetchFromTMDB('/movie/' + movie.id + '/similar', { page: 1 });
+    var similarEndpoint = state.currentType === 'tv' ? '/tv/' + movie.id + '/similar' : '/movie/' + movie.id + '/similar';
+    var similarData = await fetchFromTMDB(similarEndpoint, { page: 1 });
     elements.similarMoviesGrid.innerHTML = '';
     if (similarData && similarData.results) {
         similarData.results.slice(0, 12).forEach(function(m) {
@@ -399,6 +514,8 @@ function initEventListeners() {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 var category = link.getAttribute('data-category');
+                var type = link.getAttribute('data-type') || 'movie';
+                state.currentType = type;
                 state.currentCategory = category;
                 state.currentPage = 1;
                 var allLinks = document.querySelectorAll('.nav-link');
@@ -406,7 +523,7 @@ function initEventListeners() {
                     allLinks[j].classList.remove('active');
                 }
                 link.classList.add('active');
-                updateSectionTitle(category);
+                updateSectionTitle(category, type);
                 goHome();
                 loadMovies(category);
             });
@@ -423,6 +540,24 @@ function initEventListeners() {
     elements.loadMoreBtn.addEventListener('click', function() {
         state.currentPage++;
         loadMovies(state.currentCategory, state.currentPage, true);
+    });
+
+    elements.seasonSelect.addEventListener('change', function() {
+        state.currentSeason = parseInt(elements.seasonSelect.value);
+        state.currentEpisode = 1;
+        if (state.currentMovie) {
+            loadTvEpisodes(state.currentMovie.id, state.currentSeason);
+            var url = tvProviders[currentProviderIndex].getUrl(state.currentMovieImdbId, state.currentMovie.id, state.currentSeason, state.currentEpisode);
+            elements.playerFrame.src = url;
+        }
+    });
+
+    elements.episodeSelect.addEventListener('change', function() {
+        state.currentEpisode = parseInt(elements.episodeSelect.value);
+        if (state.currentMovie) {
+            var url = tvProviders[currentProviderIndex].getUrl(state.currentMovieImdbId, state.currentMovie.id, state.currentSeason, state.currentEpisode);
+            elements.playerFrame.src = url;
+        }
     });
 
     elements.playerFrame.addEventListener('load', function() {
