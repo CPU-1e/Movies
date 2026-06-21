@@ -391,11 +391,9 @@ async function downloadMovie(movie) {
     if (!movie) return;
     var url;
     if (state.currentType === 'tv') {
-        url = 'https://www.2embed.cc/embed/tv?tmdb=' + movie.id + '&season=' + state.currentSeason + '&episode=' + state.currentEpisode;
+        url = 'https://vidfast.pro/tv/' + movie.id + '/' + state.currentSeason + '/' + state.currentEpisode;
     } else {
-        var imdbId = await getImdbId(movie.id);
-        if (!imdbId) return;
-        url = 'https://www.2embed.cc/embed/movie?imdb=' + imdbId;
+        url = 'https://vidfast.pro/movie/' + movie.id;
     }
     if (url) window.open(url, '_blank');
 }
