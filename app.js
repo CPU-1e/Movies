@@ -595,43 +595,179 @@ function init() {
 }
 
 function initAdBlocker() {
-    var origOpen = window.open;
     window.open = function() { return null; };
+
+    var adDomains = [
+        'doubleclick.net', 'googlesyndication.com', 'googleadservices.com',
+        'adnxs.com', 'adsrvr.org', 'facebook.net', 'facebook.com/tr',
+        'amazon-adsystem.com', 'criteo.com', 'criteo.net', 'taboola.com',
+        'outbrain.com', 'moatads.com', 'adskeeper.com', ' propellerads.com',
+        'popcash.net', 'popads.net', 'exoclick.com', 'juicyads.com',
+        'trafficjunky.com', 'bidvertiser.com', 'hilltopads.com',
+        'monetizer101.com', 'adskeeper.com', 'adworkmedia.com',
+        'clkmg.com', '卷clickad.com', 'shorte.st', 'bc.vc',
+        'linkbucks.com', 'adf.ly', 'j.gs', 'q.gs',
+        'sh.st', 'coinhive.com', 'coin-hive.com', 'crypto-loot.com',
+        'authedmine.com', 'ppoi.org', 'jsecoin.com'
+    ];
+
+    var adKeywords = [
+        'popup', 'pop-under', 'popunder', 'interstitial', 'overlay',
+        'preroll', 'midroll', 'postroll', 'companion', 'sponsor',
+        'promo', 'banner', 'leaderboard', 'skyscraper', 'billboard',
+        'interstitial-ad', 'video-ad', 'native-ad', 'affiliate',
+        'clickbait', 'malvertising'
+    ];
+
+    var adSelectors = [
+        '[id*="ad-"]', '[id*="ads-"]', '[id*="ad_"]', '[id*="ads_"]',
+        '[class*="ad-"]', '[class*="ads-"]', '[class*="ad_"]', '[class*="ads_"]',
+        '[class*="advert"]', '[class*="popup"]', '[class*="modal-ad"]',
+        '[data-ad]', '[data-ads]', '[data-ad-slot]',
+        'ins.adsbygoogle', '.adsbygoogle', '.ad-slot', '.ad-unit',
+        '.ad-container', '.ad-wrapper', '.ad-banner', '.ad-box',
+        '.social-share', '.share-buttons', '.follow-us',
+        '.newsletter-signup', '.subscribe-form'
+    ];
+
+    var blockedTags = ['ADS', 'AD', 'ADVERTISEMENT'];
+
+    function isAdUrl(url) {
+        if (!url) return false;
+        var lower = url.toLowerCase();
+        for (var i = 0; i < adDomains.length; i++) {
+            if (lower.indexOf(adDomains[i]) !== -1) return true;
+        }
+        return false;
+    }
+
+    function isAdElement(el) {
+        if (!el || el.nodeType !== 1) return false;
+        if (blockedTags.indexOf(el.tagName) !== -1) return true;
+        var id = (el.id || '').toLowerCase();
+        var cls = (el.className && typeof el.className === 'string') ? el.className.toLowerCase() : '';
+        var tag = el.tagName.toLowerCase();
+        if (tag === 'ins' && cls.indexOf('adsbygoogle') !== -1) return true;
+        for (var i = 0; i < adKeywords.length; i++) {
+            if (id.indexOf(adKeywords[i]) !== -1 || cls.indexOf(adKeywords[i]) !== -1) return true;
+        }
+        return false;
+    }
+
+    function removeAds(el) {
+        if (!el) return;
+        if (el.nodeType !== 1) return;
+        if (isAdElement(el)) { el.remove(); return; }
+        if (el.tagName === 'IFRAME' && el !== document.getElementById('playerFrame')) {
+            var src = el.src || '';
+            if (isAdUrl(src) || !src || src === 'about:blank') { el.remove(); return; }
+        }
+        if (el.tagName === 'SCRIPT') {
+            var scriptSrc = el.src || '';
+            if (isAdUrl(scriptSrc)) { el.remove(); return; }
+        }
+    }
 
     document.addEventListener('click', function(e) {
         var el = e.target;
         while (el && el !== document) {
-            if (el.target === '_blank' || el.tagName === 'A' && el.href && el.href.indexOf('http') === 0 && !el.closest('.movies-grid, .detail-buttons, .hero-buttons, .nav, .search-container, .player-controls')) {
-                if (!el.closest('#playerFrame')) {
+            var tag = el.tagName;
+            var cls = (el.className && typeof el.className === 'string') ? el.className.toLowerCase() : '';
+            if (tag === 'A' && el.target === '_blank') {
+                var href = el.href || '';
+                if (!el.closest('.movies-grid, .detail-buttons, .hero-buttons, .nav, .search-container, .player-controls, #playerFrame')) {
                     e.preventDefault();
                     e.stopPropagation();
                 }
+            }
+            if (cls.indexOf('share') !== -1 || cls.indexOf('social') !== -1 || cls.indexOf('newsletter') !== -1 || cls.indexOf('subscribe') !== -1) {
+                e.preventDefault();
+                e.stopPropagation();
             }
             el = el.parentNode;
         }
     }, true);
 
+    var origFetch = window.fetch;
+    window.fetch = function() {
+        var url = arguments[0];
+        if (typeof url === 'string' && isAdUrl(url)) {
+            return Promise.resolve(new Response('', { status: 200, statusText: 'Blocked' }));
+        }
+        return origFetch.apply(this, arguments);
+    };
+
+    var origXHROpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url) {
+        if (typeof url === 'string' && isAdUrl(url)) {
+            this._isBlocked = true;
+            return;
+        }
+        return origXHROpen.apply(this, arguments);
+    };
+    var origXHRSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function() {
+        if (this._isBlocked) return;
+        return origXHRSend.apply(this, arguments);
+    };
+
     var adObserver = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            mutation.addedNodes.forEach(function(node) {
+        for (var m = 0; m < mutations.length; m++) {
+            var nodes = mutations[m].addedNodes;
+            for (var n = 0; n < nodes.length; n++) {
+                var node = nodes[n];
                 if (node.nodeType === 1) {
-                    if (node.tagName === 'IFRAME' && node !== document.getElementById('playerFrame')) {
-                        node.remove();
-                    }
-                    if (node.classList && (node.classList.contains('ad') || node.classList.contains('ads') || node.classList.contains('advert') || node.classList.contains('advertisement') || node.id && node.id.match(/ad[s]?[-_]/i) || node.className && String(node.className).match(/ad[s]?[-_]/i))) {
-                        node.remove();
+                    removeAds(node);
+                    if (node.querySelectorAll) {
+                        var found = node.querySelectorAll('iframe, script, ins, [id*="ad"], [class*="ad"], [data-ad]');
+                        for (var f = 0; f < found.length; f++) {
+                            removeAds(found[f]);
+                        }
                     }
                 }
-            });
-        });
-    });
-    adObserver.observe(document.body, { childList: true, subtree: true });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
-            return true;
+            }
         }
     });
+    adObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+    var adStyle = document.createElement('style');
+    adStyle.textContent = [
+        'ins.adsbygoogle, .adsbygoogle, .ad-slot, .ad-unit, .ad-container,',
+        '.ad-wrapper, .ad-banner, .ad-box, .ad-row, .ad-row-inner,',
+        '[id*="google_ads"], [class*="google_ads"],',
+        '[id*="taboola"], [class*="taboola"],',
+        '[id*="outbrain"], [class*="outbrain"],',
+        '[id*="popunder"], [class*="popunder"],',
+        '[id*="interstitial"], [class*="interstitial"],',
+        '[id*="preroll"], [class*="preroll"],',
+        '.video-ads, .ad-block, .block-ad, .block-ads,',
+        '.sponsored, .promo, .promotion,',
+        '#player-overlay, .player-overlay,',
+        '.modal-backdrop:not(.player-modal),',
+        '[style*="z-index: 99999"], [style*="z-index:99999"],',
+        '[style*="position: fixed"][style*="width: 100%"][style*="height: 100%"] {',
+        '    display: none !important;',
+        '    visibility: hidden !important;',
+        '    opacity: 0 !important;',
+        '    pointer-events: none !important;',
+        '    height: 0 !important;',
+        '    width: 0 !important;',
+        '}',
+        'body > div:not([id]):not([class]):not(.player-modal):not(.modal) {',
+        '    position: relative;',
+        '}'
+    ].join('\n');
+    document.head.appendChild(adStyle);
+
+    setInterval(function() {
+        var all = document.querySelectorAll('iframe, ins, [id*="ad"], [class*="ad"], [data-ad]');
+        for (var i = 0; i < all.length; i++) {
+            var el = all[i];
+            if (el !== document.getElementById('playerFrame') && !el.closest('#playerFrame, .player-content, .movies-grid, .hero, .detail-hero')) {
+                removeAds(el);
+            }
+        }
+    }, 3000);
 }
 
 if (document.readyState === 'loading') {
