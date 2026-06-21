@@ -735,6 +735,18 @@ function detectUblock() {
     });
 }
 
+function isRestrictedDevice() {
+    var ua = navigator.userAgent;
+    if (ua.indexOf('CrOS') !== -1) return true;
+    if (ua.indexOf('Windows NT') !== -1 && navigator.userAgentData) {
+        try {
+            if (navigator.userAgentData.mobile) return false;
+        } catch(e) {}
+    }
+    if (navigator.connection && navigator.connection.rtt === 0) return true;
+    return false;
+}
+
 function hideUblockModal() {
     var modal = document.getElementById('ublockModal');
     if (modal) {
@@ -747,6 +759,7 @@ function showUblockModal(browser) {
     var modal = document.getElementById('ublockModal');
     var btn = document.getElementById('ublockInstallBtn');
     var refreshBtn = document.getElementById('ublockRefreshBtn');
+    var closeBtn = document.getElementById('ublockClose');
     var browserText = document.getElementById('ublockBrowser');
     if (modal && btn) {
         btn.href = getUblockUrl(browser);
@@ -766,12 +779,19 @@ function showUblockModal(browser) {
                 window.location.reload();
             };
         }
+
+        if (closeBtn) {
+            closeBtn.onclick = function() {
+                hideUblockModal();
+            };
+        }
     }
 }
 
 async function checkUblock() {
     var browser = detectBrowser();
     if (browser === 'safari' || browser === 'unknown') return;
+    if (isRestrictedDevice()) return;
 
     var hasUblock = await detectUblock();
 

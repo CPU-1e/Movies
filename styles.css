@@ -928,6 +928,29 @@ body {
     padding: 2.5rem;
     max-width: 420px;
     width: 90%;
+    position: relative;
+}
+
+.ublock-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+
+.ublock-close:hover {
+    color: var(--text-primary);
 }
 
 .ublock-icon {
