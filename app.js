@@ -444,7 +444,48 @@ function init() {
     console.log('Initializing AbdulMovies...');
     initElements();
     initEventListeners();
+    initAdBlocker();
     loadMovies('popular');
+}
+
+function initAdBlocker() {
+    var origOpen = window.open;
+    window.open = function() { return null; };
+
+    document.addEventListener('click', function(e) {
+        var el = e.target;
+        while (el && el !== document) {
+            if (el.target === '_blank' || el.tagName === 'A' && el.href && el.href.indexOf('http') === 0 && !el.closest('.movies-grid, .detail-buttons, .hero-buttons, .nav, .search-container, .player-controls')) {
+                if (!el.closest('#playerFrame')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+            el = el.parentNode;
+        }
+    }, true);
+
+    var adObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) {
+                    if (node.tagName === 'IFRAME' && node !== document.getElementById('playerFrame')) {
+                        node.remove();
+                    }
+                    if (node.classList && (node.classList.contains('ad') || node.classList.contains('ads') || node.classList.contains('advert') || node.classList.contains('advertisement') || node.id && node.id.match(/ad[s]?[-_]/i) || node.className && String(node.className).match(/ad[s]?[-_]/i))) {
+                        node.remove();
+                    }
+                }
+            });
+        });
+    });
+    adObserver.observe(document.body, { childList: true, subtree: true });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
+            return true;
+        }
+    });
 }
 
 if (document.readyState === 'loading') {
