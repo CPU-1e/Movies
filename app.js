@@ -609,8 +609,11 @@ function init() {
 function initAdBlocker() {
     var origWindowOpen = window.open;
     window.open = function(url) {
-        if (url && typeof url === 'string' && (url.indexOf('2embed.cc') !== -1 || url.indexOf('tmdb.org') !== -1)) {
-            return origWindowOpen.apply(this, arguments);
+        if (url && typeof url === 'string') {
+            var allowed = ['2embed.cc', 'tmdb.org', 'vidfast.pro', 'vidlink.pro', '1embed.cc', 'multiembed.mov'];
+            for (var i = 0; i < allowed.length; i++) {
+                if (url.indexOf(allowed[i]) !== -1) return origWindowOpen.apply(this, arguments);
+            }
         }
         return null;
     };
