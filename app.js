@@ -389,26 +389,15 @@ async function loadTvEpisodes(showId, season) {
 
 async function downloadMovie(movie) {
     if (!movie) return;
+    var url;
     if (state.currentType === 'tv') {
-        var a = document.createElement('a');
-        a.href = 'https://www.2embed.cc/embed/tv?tmdb=' + movie.id + '&season=' + state.currentSeason + '&episode=' + state.currentEpisode;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        url = 'https://www.2embed.cc/embed/tv?tmdb=' + movie.id + '&season=' + state.currentSeason + '&episode=' + state.currentEpisode;
     } else {
         var imdbId = await getImdbId(movie.id);
-        if (imdbId) {
-            var a = document.createElement('a');
-            a.href = 'https://www.2embed.cc/embed/movie?imdb=' + imdbId;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
+        if (!imdbId) return;
+        url = 'https://www.2embed.cc/embed/movie?imdb=' + imdbId;
     }
+    if (url) window.open(url, '_blank');
 }
 
 function tryNextProvider() {
@@ -620,7 +609,13 @@ function init() {
 }
 
 function initAdBlocker() {
-    window.open = function() { return null; };
+    var origWindowOpen = window.open;
+    window.open = function(url) {
+        if (url && typeof url === 'string' && (url.indexOf('2embed.cc') !== -1 || url.indexOf('tmdb.org') !== -1)) {
+            return origWindowOpen.apply(this, arguments);
+        }
+        return null;
+    };
 
     var adDomains = [
         'doubleclick.net', 'googlesyndication.com', 'googleadservices.com',
