@@ -56,8 +56,6 @@ function initElements() {
     elements.episodeSelect = getEl('episodeSelect');
     elements.episodeControls = getEl('episodeControls');
     elements.mobileMenuBtn = getEl('mobileMenuBtn');
-    elements.heroDownloadBtn = getEl('heroDownloadBtn');
-    elements.detailDownloadBtn = getEl('detailDownloadBtn');
 }
 
 async function fetchFromTMDB(endpoint, params = {}) {
@@ -112,7 +110,6 @@ function renderHero(movie) {
             playMovie(movie);
         }
     };
-    elements.heroDownloadBtn.onclick = function() { downloadMovie(movie); };
     elements.heroDetailsBtn.onclick = function() { openMovieDetail(movie); };
 }
 
@@ -388,14 +385,7 @@ async function loadTvEpisodes(showId, season) {
 }
 
 async function downloadMovie(movie) {
-    if (!movie) return;
-    var url;
-    if (state.currentType === 'tv') {
-        url = 'https://vidfast.pro/tv/' + movie.id + '/' + state.currentSeason + '/' + state.currentEpisode;
-    } else {
-        url = 'https://vidfast.pro/movie/' + movie.id;
-    }
-    if (url) window.open(url, '_blank');
+    return;
 }
 
 function tryNextProvider() {
@@ -490,7 +480,6 @@ async function openMovieDetail(movie) {
             playMovie(movie);
         }
     };
-    elements.detailDownloadBtn.onclick = function() { downloadMovie(movie); };
 
     var similarEndpoint = state.currentType === 'tv' ? '/tv/' + movie.id + '/similar' : '/movie/' + movie.id + '/similar';
     var similarData = await fetchFromTMDB(similarEndpoint, { page: 1 });
