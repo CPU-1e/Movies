@@ -246,8 +246,12 @@ async function searchMovies(query) {
 }
 
 var providers = [
-    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://vidlink.pro/movie/' + tmdbId; } },
-    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } }
+    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidlink.pro/movie/' + tmdbId; } },
+    { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
+    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://www.2embed.cc/embed/movie?imdb=' + imdbId; } },
+    { name: 'Server 4', getUrl: function(imdbId, tmdbId) { return 'https://multiembed.mov/?video_id=' + tmdbId + '&tmdb=1'; } },
+    { name: 'Server 5', getUrl: function(imdbId, tmdbId) { return 'https://autoembed.cc/embed/movie/' + imdbId; } },
+    { name: 'Server 6', getUrl: function(imdbId, tmdbId) { return 'https://embed.su/embed/movie/' + tmdbId; } }
 ];
 var currentProviderIndex = 0;
 
@@ -432,11 +436,7 @@ function initEventListeners() {
 
     elements.mobileMenuBtn.addEventListener('click', function() {
         var nav = document.getElementById('mainNav');
-        if (nav.style.display === 'flex') {
-            nav.style.display = 'none';
-        } else {
-            nav.style.display = 'flex';
-        }
+        nav.classList.toggle('mobile-open');
     });
 }
 
