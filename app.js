@@ -301,13 +301,15 @@ async function searchMovies(query) {
 }
 
 var providers = [
-    { name: 'Server 1', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
-    { name: 'Server 2', getUrl: function(imdbId, tmdbId) { return 'https://1embed.cc/embed/movie/' + tmdbId; } }
+    { name: 'Server 1 (if broken, use Server 2)', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pro/movie/' + imdbId; } },
+    { name: 'Server 2 (if broken, use Server 1)', getUrl: function(imdbId, tmdbId) { return 'https://vidfast.pm/movie/' + imdbId; } },
+    { name: 'Server 3', getUrl: function(imdbId, tmdbId) { return 'https://1embed.cc/embed/movie/' + tmdbId; } }
 ];
 
 var tvProviders = [
-    { name: 'Server 1', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidfast.pro/tv/' + tmdbId + '/' + season + '/' + episode; } },
-    { name: 'Server 2', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://1embed.cc/embed/tv/' + tmdbId + '/' + season + '/' + episode; } }
+    { name: 'Server 1 (if broken, use Server 2)', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidfast.pro/tv/' + tmdbId + '/' + season + '/' + episode; } },
+    { name: 'Server 2 (if broken, use Server 1)', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://vidfast.pm/tv/' + tmdbId + '/' + season + '/' + episode; } },
+    { name: 'Server 3', getUrl: function(imdbId, tmdbId, season, episode) { return 'https://1embed.cc/embed/tv/' + tmdbId + '/' + season + '/' + episode; } }
 ];
 var currentProviderIndex = 0;
 
@@ -599,7 +601,7 @@ function initAdBlocker() {
     var origWindowOpen = window.open;
     window.open = function(url) {
         if (url && typeof url === 'string') {
-            var allowed = ['vidfast.pro', '1embed.cc', 'tmdb.org'];
+            var allowed = ['vidfast.pro', 'vidfast.pm', '1embed.cc', 'tmdb.org'];
             for (var i = 0; i < allowed.length; i++) {
                 if (url.indexOf(allowed[i]) !== -1) return origWindowOpen.apply(this, arguments);
             }
