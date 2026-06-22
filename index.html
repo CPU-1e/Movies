@@ -2,167 +2,142 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movies - Free Movie Streaming</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Movies - Free Streaming</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23111'/><circle cx='35' cy='40' r='12' fill='white'/><circle cx='65' cy='40' r='12' fill='white'/><circle cx='50' cy='28' r='14' fill='white'/><path d='M20 60h60l-5 25H25z' fill='white' opacity='0.9'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e50914'/><polygon points='40,30 70,50 40,70' fill='white'/></svg>">
 </head>
 <body>
-    <header class="header">
-        <div class="header-content">
-            <a href="#" class="logo" onclick="goHome(); return false;">
-                    <svg class="logo-svg" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="36" height="36" rx="8" fill="#111"/>
-                        <path d="M12 28h12l1-2H11l1 2z" fill="white"/>
-                        <path d="M11 16h14l-2 10H13l-2-10z" fill="white" opacity="0.9"/>
-                        <path d="M13 16c0-3 2-5 5-5s5 2 5 5H13z" fill="white" opacity="0.3"/>
-                        <circle cx="14" cy="12" r="2.5" fill="white"/>
-                        <circle cx="22" cy="12" r="2.5" fill="white"/>
-                        <circle cx="18" cy="9" r="3" fill="white"/>
-                        <circle cx="15.5" cy="14" r="2" fill="white" opacity="0.7"/>
-                        <circle cx="20.5" cy="14" r="2" fill="white" opacity="0.7"/>
-                    </svg>
-                <span class="logo-text">Movies</span>
+    <header class="header" id="header">
+        <div class="header-inner">
+            <a href="#" class="logo" onclick="goHome();return false">
+                <svg class="logo-icon" width="28" height="28" viewBox="0 0 100 100" fill="none">
+                    <rect width="100" height="100" rx="20" fill="#e50914"/>
+                    <polygon points="40,30 70,50 40,70" fill="white"/>
+                </svg>
+                <span>Movies</span>
             </a>
-            <nav class="nav" id="mainNav">
+            <nav class="nav" id="nav">
                 <a href="#" class="nav-link active" data-type="movie" data-category="popular">Movies</a>
                 <a href="#" class="nav-link" data-type="movie" data-category="top_rated">Top Rated</a>
                 <a href="#" class="nav-link" data-type="movie" data-category="upcoming">Upcoming</a>
                 <a href="#" class="nav-link" data-type="tv" data-category="popular">TV Shows</a>
-                <a href="#" class="nav-link" data-type="tv" data-category="top_rated">TV Top Rated</a>
+                <a href="#" class="nav-link" data-type="tv" data-category="top_rated">TV Top</a>
             </nav>
-            <div class="search-container">
-                <input type="text" id="searchInput" placeholder="Search movies & TV shows..." class="search-input">
-                <button id="searchBtn" class="search-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="M21 21l-4.35-4.35"></path>
-                    </svg>
+            <div class="header-actions">
+                <button class="search-toggle" id="searchToggle" aria-label="Toggle search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                </button>
+                <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
                 </button>
             </div>
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-                <span></span><span></span><span></span>
-            </button>
+        </div>
+        <div class="search-bar" id="searchBar">
+            <input type="text" id="searchInput" placeholder="Search movies & shows..." autocomplete="off">
+            <button id="searchClear" class="search-clear" aria-label="Clear search">&times;</button>
         </div>
     </header>
 
-    <main class="main" id="mainContent">
-        <!-- Home View -->
+    <main id="main">
         <div id="homeView">
-            <section class="hero" id="hero">
-                <div class="hero-content">
-                    <h1 class="hero-title" id="heroTitle"></h1>
-                    <p class="hero-overview" id="heroOverview"></p>
-                    <div class="hero-meta">
+            <section class="hero" id="hero" style="background-image:linear-gradient(135deg,#0f0f0f 0%,#1a1a2e 100%)">
+                <div class="hero-gradient"></div>
+                <div class="hero-body">
+                    <h1 class="hero-title" id="heroTitle">Welcome</h1>
+                    <p class="hero-desc" id="heroOverview">Browse popular movies and TV shows</p>
+                    <div class="hero-meta" id="heroMeta">
                         <span class="hero-rating" id="heroRating"></span>
                         <span class="hero-year" id="heroYear"></span>
                     </div>
-                    <div class="hero-buttons">
-                        <button class="btn-play-now" id="heroPlayBtn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                            Play Now
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" id="heroPlayBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                            Play
                         </button>
-                        <button class="btn-details" id="heroDetailsBtn">
-                            Details →
-                        </button>
+                        <button class="btn btn-secondary" id="heroDetailsBtn">Details</button>
                     </div>
                 </div>
-                <div class="hero-overlay"></div>
             </section>
 
-            <section class="movies-section">
-                <div class="section-header">
+            <section class="section">
+                <div class="section-head">
                     <h2 class="section-title" id="sectionTitle">Popular Movies</h2>
                 </div>
-                <div class="movies-grid" id="moviesGrid"></div>
-                <div class="loading" id="loading">
+                <div class="grid" id="moviesGrid"></div>
+                <div class="spinner-wrap" id="loading">
                     <div class="spinner"></div>
-                    <p>Loading movies...</p>
                 </div>
                 <div class="load-more" id="loadMore">
-                    <button class="btn-load-more" id="loadMoreBtn">Load More Movies</button>
+                    <button class="btn btn-outline" id="loadMoreBtn">Load More</button>
                 </div>
             </section>
         </div>
 
-        <!-- Movie Detail View -->
-        <div id="movieDetailView" style="display:none;">
-            <section class="detail-hero" id="detailHero">
-                <div class="detail-hero-content">
+        <div id="detailView" style="display:none">
+            <section class="detail-hero" id="detailHero" style="background-image:linear-gradient(135deg,#0f0f0f 0%,#1a1a2e 100%)">
+                <div class="hero-gradient"></div>
+                <div class="detail-body">
                     <h1 class="detail-title" id="detailTitle"></h1>
-                    <div class="detail-meta">
+                    <div class="detail-meta" id="detailMeta">
                         <span class="detail-rating" id="detailRating"></span>
                         <span class="detail-year" id="detailYear"></span>
                         <span class="detail-runtime" id="detailRuntime"></span>
                     </div>
-                    <p class="detail-overview" id="detailOverview"></p>
-                    <div class="detail-genres" id="detailGenres"></div>
-                    <div class="detail-buttons">
-                        <button class="btn-play-now" id="detailPlayBtn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                            Play Now
-                        </button>
-                    </div>
+                    <p class="detail-desc" id="detailOverview"></p>
+                    <div class="detail-tags" id="detailGenres"></div>
+                    <button class="btn btn-primary" id="detailPlayBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                        Play
+                    </button>
                 </div>
-                <div class="detail-hero-overlay"></div>
             </section>
 
-            <section class="movies-section">
+            <section class="section">
                 <h2 class="section-title">More Like This</h2>
-                <div class="movies-grid" id="similarMoviesGrid"></div>
+                <div class="grid" id="similarGrid"></div>
             </section>
         </div>
     </main>
 
-    <!-- Player Modal -->
-    <div class="modal player-modal" id="playerModal">
-        <div class="player-content">
-            <div class="player-header">
-                <h2 class="player-title" id="playerTitle"></h2>
-                <div class="player-controls" id="playerControls">
-                    <button class="source-btn active">Server 1</button>
-                    <button class="player-close" id="playerClose">&times;</button>
-                </div>
-            </div>
-            <div class="episode-controls" id="episodeControls" style="display:none">
-                <select id="seasonSelect" class="episode-select"></select>
-                <select id="episodeSelect" class="episode-select"></select>
-            </div>
-            <div class="player-wrapper">
-                <iframe id="playerFrame" src="" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-            </div>
+    <div class="modal" id="playerModal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="playerTitle">Now Playing</h3>
+            <div class="modal-actions" id="serverBtns"></div>
+            <button class="modal-close" id="playerClose" aria-label="Close player">&times;</button>
+        </div>
+        <div class="episode-bar" id="episodeBar" style="display:none">
+            <select id="seasonSelect"></select>
+            <select id="episodeSelect"></select>
+        </div>
+        <div class="player-wrap">
+            <iframe id="playerFrame" src="" allow="autoplay;encrypted-media" allowfullscreen></iframe>
+        </div>
+    </div>
 
+    <div class="overlay" id="overlay"></div>
+
+    <div class="ublock-modal" id="ublockModal">
+        <div class="ublock-box">
+            <button class="ublock-close" id="ublockClose">&times;</button>
+            <svg width="48" height="48" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="16" fill="#e50914"/><path d="M32 12L14 20v24l18 8 18-8V20L32 12z" fill="none" stroke="white" stroke-width="2.5"/><path d="M24 30l6 6 10-12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h2>Ad Blocker Recommended</h2>
+            <p>This site works best with <strong>uBlock Origin</strong>. It helps movies and shows load faster.</p>
+            <a id="ublockInstallBtn" class="ublock-btn" href="#" target="_blank" rel="noopener">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Install uBlock Origin
+            </a>
+            <button id="ublockSkip" class="ublock-skip">Continue without ad blocker</button>
+            <p class="ublock-browser" id="ublockBrowser"></p>
         </div>
     </div>
 
     <footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2026 Movies. All rights reserved.</p>
-            <p class="footer-disclaimer">Movie data from TMDB.</p>
-        </div>
+        <p>&copy; 2026 Movies &middot; Powered by TMDB</p>
     </footer>
-
-    <!-- uBlock Origin Modal -->
-    <div class="ublock-modal" id="ublockModal">
-        <div class="ublock-content">
-            <button class="ublock-close" id="ublockClose">&times;</button>
-            <div class="ublock-icon">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="64" height="64" rx="16" fill="#111"/>
-                    <path d="M32 12L14 20v24l18 8 18-8V20L32 12z" fill="none" stroke="white" stroke-width="2.5"/>
-                    <path d="M24 30l6 6 10-12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
-            <h2 class="ublock-title">Ad Blocker Recommended</h2>
-            <p class="ublock-text">This site works best with <strong>uBlock Origin</strong>. It makes your movies and TV Shows load faster and <strong>ENHANCES IT!</strong></p>
-            <a id="ublockInstallBtn" class="ublock-btn" href="#" target="_blank">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Install uBlock Origin
-            </a>
-            <button id="ublockRefreshBtn" class="ublock-refresh-btn">I already have it — Refresh</button>
-            <p class="ublock-browser" id="ublockBrowser"></p>
-        </div>
-    </div>
 
     <script src="app.js"></script>
 </body>
