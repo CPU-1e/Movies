@@ -77,40 +77,46 @@ function poster(p){return p?IMG+'/w500'+p:''}
 
 function hero(m){
     if(!m)return;
+    const it = m._type || s.type; // Safely get type
     const b=backdrop(m.backdrop_path);
     if(b)$.hero.style.backgroundImage='url('+b+')';
-    const t=s.type==='tv'?m.name||'':m.title||'';
-    const d=s.type==='tv'?m.first_air_date:m.release_date;
+    const t=it==='tv'?m.name||'':m.title||'';
+    const d=it==='tv'?m.first_air_date:m.release_date;
     $.heroTitle.textContent=t;
     $.heroDesc.textContent=m.overview||'';
     $.heroRating.innerHTML=m.vote_average?'&#9733; '+m.vote_average.toFixed(1):'';
     $.heroYear.textContent=d?d.split('-')[0]:'';
     $.heroPlay.onclick=()=>{
-        if(s.type==='tv'){playTv(m,1,1);loadSeasons(m)}
+        if(it==='tv'){playTv(m,1,1);loadSeasons(m)}
         else playMovie(m);
     };
-    $.heroDetails.onclick=()=>openDetail(m);
+    $.heroDetails.onclick=()=> {
+        m._type = it; 
+        openDetail(m);
+    }
 }
 
 function card(movie){
     const c=document.createElement('div');
     c.className='card';
+    const it = movie._type || s.type; // Get type safely
+    
     c.addEventListener('click',()=>{
-        const t=s.type;
-        if(movie._type)s.type=movie._type;
+        movie._type = it; // Ensure type travels with the object
         openDetail(movie);
-        s.type=t;
     });
+    
     const p=poster(movie.poster_path);
-    const t=s.type==='tv'?movie.name||'Untitled':movie.title||'Untitled';
-    const d=s.type==='tv'?movie.first_air_date:movie.release_date;
+    const t=it==='tv'?movie.name||'Untitled':movie.title||'Untitled';
+    const d=it==='tv'?movie.first_air_date:movie.release_date;
     const y=d?d.split('-')[0]:'N/A';
     const r=movie.vote_average?movie.vote_average.toFixed(1):'N/A';
     const img=p||'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" fill="%231a1a28"><rect width="300" height="450"/><text x="50%" y="50%" fill="%23555570" font-family="sans-serif" font-size="14" text-anchor="middle" dy=".3em">No Poster</text></svg>';
+    
     c.innerHTML='<div class="card-poster"><img src="'+img+'" alt="'+t.replace(/"/g,'&quot;')+'" loading="lazy"><div class="card-rating">&#9733; '+r+'</div><div class="card-play"><button aria-label="Play">&nbsp;&#9654;</button></div></div><div class="card-body"><div class="card-title">'+t+'</div><div class="card-year">'+y+'</div><div class="card-badge">HD</div></div>';
+    
     c.querySelector('.card-play button').addEventListener('click',e=>{
         e.stopPropagation();
-        const it=movie._type||s.type;
         if(it==='tv'){playTv(movie,1,1);loadSeasons(movie)}
         else playMovie(movie);
     });
@@ -152,31 +158,40 @@ async function load(category,page,append){
 }
 
 async function search(q){
-    if(!q||!q.trim()){load(s.category);return}
+    goHome(); // Bring the user back to the grid view if they are on a detail page
+    
+    if(!q||!q.trim()){
+        s.page=1;
+        load(s.category);
+        return;
+    }
+    
     s.loading=true;
     $.spin.classList.add('active');
     $.secTitle.textContent='Search: "'+q+'"';
+    $.grid.innerHTML=''; // Clear the grid immediately while loading
+    
     const[mData,tData]=await Promise.all([
         tmdb('/search/movie',{query:q,page:1,include_adult:false}),
         tmdb('/search/tv',{query:q,page:1,include_adult:false})
     ]);
+    
     const all=[];
     if(mData&&mData.results)mData.results.forEach(m=>{m._type='movie';all.push(m)});
     if(tData&&tData.results)tData.results.forEach(t=>{t._type='tv';all.push(t)});
     all.sort((a,b)=>(b.vote_average||0)-(a.vote_average||0));
+    
     if(all.length){
         s.movies=all;
-        $.grid.innerHTML='';
-        all.forEach(item=>{
-            const ot=s.type;
-            if(item._type)s.type=item._type;
-            $.grid.appendChild(card(item));
-            s.type=ot;
-        });
+        all.forEach(item=>$.grid.appendChild(card(item)));
         $.loadMore.style.display='none';
-        // scroll to grid
         document.querySelector('.section')?.scrollIntoView({behavior:'smooth'});
+    } else {
+        // Show empty message if nothing is found
+        $.grid.innerHTML='<div style="width:100%;text-align:center;padding:2rem;grid-column:1/-1;">No results found for "'+q+'"</div>';
+        $.loadMore.style.display='none';
     }
+    
     s.loading=false;
     $.spin.classList.remove('active');
 }
@@ -289,19 +304,23 @@ function goHome(){
 
 async function openDetail(m){
     s.movie=m;
+    const it = m._type || s.type; // Extract specific type for detail context
     window.scrollTo(0,0);
     $.home.style.display='none';
     $.detail.style.display='';
+    
     const b=backdrop(m.backdrop_path);
     if(b)$.dHero.style.backgroundImage='url('+b+')';
-    const t=s.type==='tv'?m.name||'':m.title||'';
-    const d=s.type==='tv'?m.first_air_date:m.release_date;
+    
+    const t=it==='tv'?m.name||'':m.title||'';
+    const d=it==='tv'?m.first_air_date:m.release_date;
     $.dTitle.textContent=t;
     $.dRating.innerHTML=m.vote_average?'&#9733; '+m.vote_average.toFixed(1):'';
     $.dYear.textContent=d?d.split('-')[0]:'';
     $.dRuntime.textContent=m.runtime?m.runtime+' min':'';
     $.dDesc.textContent=m.overview||'No description available.';
     $.dTags.innerHTML='';
+    
     if(m.genre_ids){
         m.genre_ids.forEach(g=>{
             const el=document.createElement('span');
@@ -310,14 +329,21 @@ async function openDetail(m){
             $.dTags.appendChild(el);
         });
     }
+    
     $.dPlay.onclick=()=>{
-        if(s.type==='tv'){playTv(m,1,1);loadSeasons(m)}
+        if(it==='tv'){playTv(m,1,1);loadSeasons(m)}
         else playMovie(m);
     };
-    const ep=s.type==='tv'?'/tv/'+m.id+'/similar':'/movie/'+m.id+'/similar';
+    
+    const ep=it==='tv'?'/tv/'+m.id+'/similar':'/movie/'+m.id+'/similar';
     const sd=await tmdb(ep,{page:1});
     $.simGrid.innerHTML='';
-    if(sd&&sd.results)sd.results.slice(0,12).forEach(x=>$.simGrid.appendChild(card(x)));
+    if(sd&&sd.results){
+        sd.results.slice(0,12).forEach(x=>{
+            x._type = it; // Pass down the type to similar items
+            $.simGrid.appendChild(card(x));
+        });
+    }
 }
 
 const genres={
@@ -339,7 +365,6 @@ function events(){
             document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
             link.classList.add('active');
             secTitle(cat,type);
-            // close mobile nav if open
             closeNav();
             goHome();
             load(cat);
@@ -389,7 +414,6 @@ function events(){
         }
     });
 
-    // Mobile menu
     $.menuBtn.addEventListener('click',()=>{
         $.menuBtn.classList.toggle('active');
         $.nav.classList.toggle('open');
@@ -410,7 +434,6 @@ function closeNav(){
     document.body.style.overflow='';
 }
 
-// Lightweight adblock detection (no API overrides, no MutationObserver)
 function detectUblock(){
     return new Promise(resolve=>{
         const b=document.createElement('div');
@@ -488,7 +511,6 @@ function hideUblock(){
 async function checkUblock(){
     const br=ublockBrowser();
     if(br==='safari'||br==='unknown'){hideUblock();return}
-    // Skip on iOS/Safari entirely
     if(/iPad|iPhone|iPod/.test(navigator.userAgent)){hideUblock();return}
     const has=await detectUblock();
     if(has){localStorage.removeItem('ublock_prompted');hideUblock();return}
