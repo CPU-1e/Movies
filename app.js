@@ -196,16 +196,24 @@ async function search(q){
     $.spin.classList.remove('active');
 }
 
-const prov=[
-    {name:'Server 1',url:(i,t)=>'https://vidfast.pro/movie/'+i},
-    {name:'Server 2',url:(i,t)=>'https://vidfast.pm/movie/'+i},
-    {name:'Server 3',url:(i,t)=>'https://1embed.cc/embed/movie/'+t}
+const providers=[
+    {name:'vidsrc.mov',movie:(i,t)=>'https://vidsrc.mov/embed/movie/'+t,tv:(i,t,se,ep)=>'https://vidsrc.mov/embed/tv/'+t+'/'+se+'/'+ep},
+    {name:'VidSrc.fyi',movie:(i,t)=>'https://vidsrc.fyi/embed/movie/'+t,tv:(i,t,se,ep)=>'https://vidsrc.fyi/embed/tv/'+t+'/'+se+'/'+ep},
+    {name:'VidRock',movie:(i,t)=>'https://vidrock.net/movie/'+t,tv:(i,t,se,ep)=>'https://vidrock.net/tv/'+t+'/'+se+'/'+ep},
+    {name:'Vidnest',movie:(i,t)=>'https://vidnest.fun/movie/'+t,tv:(i,t,se,ep)=>'https://vidnest.fun/tv/'+t+'/'+se+'/'+ep},
+    {name:'VidKing',movie:(i,t)=>'https://vidking.net/embed/movie/'+t,tv:(i,t,se,ep)=>'https://vidking.net/embed/tv/'+t+'/'+se+'/'+ep},
+    {name:'VidLink',movie:(i,t)=>'https://vidlink.pro/movie/'+t,tv:(i,t,se,ep)=>'https://vidlink.pro/tv/'+t+'/'+se+'/'+ep},
+    {name:'VidFast',movie:(i,t)=>'https://vidfast.pro/movie/'+i,tv:(i,t,se,ep)=>'https://vidfast.pro/tv/'+t+'/'+se+'/'+ep},
+    {name:'VidUp',movie:(i,t)=>'https://vidup.to/movie/'+t,tv:(i,t,se,ep)=>'https://vidup.to/tv/'+t+'/'+se+'/'+ep},
+    {name:'Videasy',movie:(i,t)=>'https://player.videasy.net/movie/'+t,tv:(i,t,se,ep)=>'https://player.videasy.net/tv/'+t+'/'+se+'/'+ep},
+    {name:'111Movies',movie:(i,t)=>'https://111movies.com/movie/'+t,tv:(i,t,se,ep)=>'https://111movies.com/tv/'+t+'/'+se+'/'+ep},
+    {name:'2Embed',movie:(i,t)=>'https://www.2embed.cc/embed/'+t,tv:(i,t,se,ep)=>'https://www.2embed.cc/embedtv/'+t+'&s='+se+'&e='+ep},
+    {name:'MultiEmbed',movie:(i,t)=>'https://multiembed.mov/?video_id='+t,tv:(i,t,se,ep)=>'https://multiembed.mov/?video_id='+t+'&s='+se+'&e='+ep},
+    {name:'SuperFlix',movie:(i,t)=>'https://superflixapi.to/filme/'+t,tv:(i,t,se,ep)=>'https://superflixapi.to/serie/'+t+'/'+se+'/'+ep},
+    {name:'Peachify',movie:(i,t)=>'https://peachify.live/embed/movie/'+t,tv:(i,t,se,ep)=>'https://peachify.live/embed/tv/'+t+'/'+se+'/'+ep}
 ];
-const tProv=[
-    {name:'Server 1',url:(i,t,se,ep)=>'https://vidfast.pro/tv/'+t+'/'+se+'/'+ep},
-    {name:'Server 2',url:(i,t,se,ep)=>'https://vidfast.pm/tv/'+t+'/'+se+'/'+ep},
-    {name:'Server 3',url:(i,t,se,ep)=>'https://1embed.cc/embed/tv/'+t+'/'+se+'/'+ep}
-];
+const prov=providers.map(p=>({name:p.name,url:p.movie}));
+const tProv=providers.map(p=>({name:p.name,url:p.tv}));
 
 async function getI(id){
     if(s.type==='tv')return null;
