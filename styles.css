@@ -6,10 +6,10 @@
 
 :root {
     /* Pure Monochrome Palette */
-    --bg: #000000;
-    --bg2: #0a0a0a;
-    --bg3: #141414;
-    --card: #0d0d0d;
+    --bg: #080817;
+    --bg2: #11112a;
+    --bg3: #1b1b3a;
+    --card: #121226;
     --card-hover: #171717;
     
     /* Clean Typography Scale Colors */
@@ -18,9 +18,9 @@
     --text3: #52525b; /* Subdued */
     
     /* Accents (Converted Red to Crisp White/Gray) */
-    --accent: #ffffff;
-    --accent-hover: #e4e4e7;
-    --accent-subtle: rgba(255, 255, 255, 0.08);
+    --accent: #7455f5;
+    --accent-hover: #8b73ff;
+    --accent-subtle: rgba(116, 85, 245, 0.16);
     
     /* Layout & Borders */
     --border: #27272a;
@@ -679,11 +679,12 @@ img {
     flex-shrink: 0;
 }
 
-.modal-actions button.active, .modal-actions button:hover {
-    background: var(--text);
-    border-color: var(--text);
-    color: var(--bg);
-}
+  .modal-actions button.active, .modal-actions button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(116, 85, 245, 0.28);
+  }
 
 .modal-close {
     width: 32px;
